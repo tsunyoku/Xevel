@@ -278,7 +278,7 @@ class Xevel: # osu shall never leave my roots
             self.loop.stop()
         
         # we wanna ignore these signals?
-        for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP): # add signal.SIGHUP for linux, TODO: windows check
+        for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             signal.signal(sig, _ignore_signal)
         
         f = asyncio.ensure_future(run_server(), loop=self.loop)
