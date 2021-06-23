@@ -9,6 +9,9 @@ A basic use example of Xevel could look like this:
 from xevel import *
 
 web = Xevel(('localhost', 9208)) # you can use tuples for port setups ('localhost', PORT') or unix sockets (provide file location as string)
+# ('localhost', 9208) # inet
+# '/tmp/test.sock' # unix
+
 router = Router('localhost:9208') # force routers to only accept connections from certain domain/subdomains. can provide 1 as a string or multiple as a list
 
 @router.before_request()
