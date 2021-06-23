@@ -119,6 +119,11 @@ class Router:
         
     def route(self, path, method: List[str] = ['GET']): # route decorator
         def wrapper(_coro: Coroutine):
+            if all(c in path for c in ('<', '>')): # thank you lenforiee cus i absolutely hate regex
+                np = re.compile(rf"{path.replace('<', '(?P<').replace('>', '>.+)')}")
+                self.endpoints.add(Endpoint(np, method, _coro))
+                return _coro
+
             self.endpoints.add(Endpoint(path, method, _coro))
             return _coro
         return wrapper
