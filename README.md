@@ -3,6 +3,8 @@ My first attempt at a python ASGI server
 
 Xevel is very much my first attempt at an ASGI server and it is definitely not perfect. I am open to any PRs or issues if you come across any problems.
 
+NOTE: This will only work on UNIX-based systems.
+
 A basic use example of Xevel could look like this:
 
 ```python

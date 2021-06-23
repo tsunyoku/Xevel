@@ -255,6 +255,9 @@ class Xevel: # osu shall never leave my roots
                         req, _ = await self.loop.sock_accept(self.socket)
                         t = self.loop.create_task(self.handle_req(req))
                     elif rd is r: # shutdown signal!!!
+                        rcv = signal.Signals(os.read(r, 1)[0])
+                        if rcv is signal.SIGINT:
+                            print('\x1b[2K', end='\r') # cleaner shut down
                         close = True
                     else: # ?
                         raise RuntimeError('Error when processing reader...')
@@ -288,5 +291,3 @@ class Xevel: # osu shall never leave my roots
             self.loop.run_forever()
         finally:
             self.loop.close()
-            
-        
