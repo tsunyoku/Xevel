@@ -21,17 +21,17 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.9'
+        python-version: '3.8'
     - name: Install dependencies
       run: |
-        python3.9 -m pip install --upgrade pip
-        python3.9 -m pip install setuptools wheel twine
+        python3 -m pip install --upgrade pip
+        python3 -m pip install setuptools wheel twine
     - name: Build package
       run: python -m build
     - name: Publish package
       run: |
-        python3.9 setup.py sdist bdist_wheel
-        python3.9 -m twine upload dist/*
+        python3 setup.py sdist bdist_wheel
+        python3 -m twine upload dist/*
       env:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYAPI_API_TOKEN }}
