@@ -6,11 +6,10 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: Xevel PyPI
 
 on:
-  release:
-    types: [published]
+  push
 
 jobs:
   deploy:
