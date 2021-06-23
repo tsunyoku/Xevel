@@ -8,7 +8,7 @@ NOTE: This will only work on UNIX-based systems.
 A basic use example of Xevel could look like this:
 
 ```python
-from xevel import *
+from xevel.xevel import *
 
 web = Xevel(('localhost', 9208)) # you can use tuples for port setups ('localhost', PORT') or unix sockets (provide file location as string)
 # ('localhost', 9208) # inet
@@ -17,7 +17,7 @@ web = Xevel(('localhost', 9208)) # you can use tuples for port setups ('localhos
 router = Router('localhost:9208') # force routers to only accept connections from certain domain/subdomains. can provide 1 as a string or multiple as a list
 
 @router.before_request()
-async def breq():
+async def breq(req):
     print('before request is running!!!')
     
 @router.after_request()

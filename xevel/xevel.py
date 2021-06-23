@@ -33,6 +33,7 @@ class Request: # class to handle single request from client
         self.extras = {} # ?
         
         self.elapsed = ''
+        self.code = 404
 
         # UNION IS FUCKING HOT
         self.headers: Dict[Union[str, int], Any] = {}
@@ -215,6 +216,7 @@ class Xevel: # osu shall never leave my roots
             resp = resp.encode() # encode response into bytes for client ready xd
             
         req.url = host + path
+        req.code = code
         
         if 'Accept-Encoding' in req.headers and 'gzip' in req.headers['Accept-Encoding'] and len(resp) > 1500:
             resp = gzip.compress(resp, 1)
