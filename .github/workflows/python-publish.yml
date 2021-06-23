@@ -26,7 +26,6 @@ jobs:
       run: |
         python3.9 -m pip install --upgrade pip
         python3.9 -m pip install setuptools wheel twine
-        python3.9 setup.py install
     - name: Build package
       run: python -m build
     - name: Publish package
