@@ -238,7 +238,6 @@ class Xevel: # osu shall never leave my roots
                 os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
                 
             self.socket.listen(5)
-            print('starting server')
             
             # i am trying to make this as original as possible while it also being my first attempt, bare with me!!
             r, w = os.pipe()
@@ -288,7 +287,6 @@ class Xevel: # osu shall never leave my roots
         try:
             self.loop.run_forever()
         finally:
-            print('stopping server')
             self.loop.close()
             
         
