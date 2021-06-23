@@ -7,6 +7,8 @@ import signal
 import select
 import asyncio
 import re
+import time
+import gzip
 
 class Endpoint:
     def __init__(self, path, method, handler):
@@ -27,6 +29,10 @@ class Request: # class to handle single request from client
         self.url = ''
         self.ver = 'HTTP/1.1'
         self.body = b''
+        
+        self.extras = {} # ?
+        
+        self.elapsed = ''
 
         # UNION IS FUCKING HOT
         self.headers: Dict[Union[str, int], Any] = {}
@@ -178,6 +184,8 @@ class Xevel: # osu shall never leave my roots
             pass # dont see why socket would decide to error but alas
         
     async def handle_route(self, req):
+        start = time.time()
+
         host = req.headers['Host'] # find router that handles correct host
         path = req.path
         code = 404 # force 404 code until we can actually complete request/set different code
@@ -188,7 +196,7 @@ class Xevel: # osu shall never leave my roots
             return await req.send(code, resp) # couldn't find any router to handle request, return 404
         
         for _coro in router.before_reqs:
-            await _coro() # handle any coroutines before making the request
+            await _coro(req) # handle any coroutines before making the request
             
         # ensure we have an endpoint in this router
         for ep in router.endpoints:
@@ -207,8 +215,20 @@ class Xevel: # osu shall never leave my roots
             resp = resp.encode() # encode response into bytes for client ready xd
             
         req.url = host + path
+        
+        if 'Accept-Encoding' in req.headers and 'gzip' in req.headers['Accept-Encoding'] and len(resp) > 1500:
+            resp = gzip.compress(resp, 1)
+            req.headers['Content-Encoding'] = 'gzip'
             
         await req.send(code, resp) # finally send request to client xd
+        
+        end = time.time()
+        taken = (end - start)
+        
+        if taken < 1:
+            req.elapsed = f'{round(taken * 1000, 2)}ms'
+        else:
+            req.elapsed = f'{round(taken, 2)}s'
         
         for _coro in router.after_reqs:
             await _coro(req) # handle any coroutines before ending request | send request so they can take some attributes from it
