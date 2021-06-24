@@ -92,7 +92,7 @@ class Request: # class to handle single request from client
             
     async def parse_req(self):
         b = bytearray()
-        while o := b.find(b'\r\n\r\n') == -1: # BETTER OFFSET MANAGEMENT
+        while (o := b.find(b'\r\n\r\n')) == -1: # BETTER OFFSET MANAGEMENT
             b += await self.loop.sock_recv(self.client, 1024)
         
         await self._handle_headers(b[:o])
@@ -124,20 +124,20 @@ class Request: # class to handle single request from client
                     self.parse_form()
         
     async def send(self, code, b):
-        self.headers_list.insert(0, f'HTTP/1.1 {code} {STATUS_CODES.get(code)}')
+        resp = bytearray()
+        rl = [f'HTTP/1.1 {code} {STATUS_CODES.get(code)}']
         
         if b:
-            self.headers_list.insert(1, f'Content-Length: {len(b)}')
-        
-        for k, v in self.resp_headers.items():
-            self.headers_list.append(f'{k}: {v}')
+            rl.append(f'Content-Type: {len(b)}')
             
-        headers = '\r\n'.join(self.headers_list)
-        resp = f'{headers}\r\n\r\n'.encode()
+        for key, val in self.resp_headers.items():
+            rl.append(f'{key}: {val}')
+            
+        resp += ('\r\n'.join(rl) + '\r\n\r\n').encode()
         
         if b:
             resp += b
-            
+
         await self.loop.sock_sendall(self.client, resp)
         
 class Router:
