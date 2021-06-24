@@ -18,7 +18,22 @@ class Endpoint:
         self.handler: Coroutine = handler
         
     def match(self, path): # check endpoint path with request path
-        return self.path == path
+        if isinstance(self.path, re.Pattern):
+            args = self.path.match(path)
+            
+            if not args:
+                False
+                
+            if not (gd := args.groupdict()):
+                return True
+            
+            ret = []
+            for k in gd:
+                ret.append(args[k])
+            
+            return ret
+        elif isinstance(self.path, str):
+            return self.path == path
 
 class Request: # class to handle single request from client
     def __init__(self, client, loop):
