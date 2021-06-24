@@ -48,20 +48,17 @@ class Request: # class to handle single request from client
     async def _handle_headers(self, h): # use _ for most internal functions ig xd
         headers = h.decode()
         
-        if not headers:
-            return # ?
+        self.type, self.path, self.ver = headers.splitlines()[0].split(' ')
+        self.ver = self.ver.split('/')[1]
         
-        self.type, self.path, self.ver = headers.splitlines()[0].split(' ') # good old client requests!
-        
-        if '?' in self.path: # we can assume there's args in path
-            self.path, a = self.path.split('?') # update true path & get args in raw form
+        if '?' in self.path:
+            self.path, args = self.path.split('?')
             
-            for arg in a.split('&'):
-                key, val = arg.split('=', 1)
-                self.args[key] = val.strip() # strip?
+            for key, val in [a.split('=', 1) for a in args.split('&')]:
+                self.args[key] = val.strip()
                 
-        for key, val in [h.split(':', 1) for h in headers.splitlines()[1:]]: # handle rest of provided headers
-            self.headers[key] = val.strip() # strip?
+        for key, val in [hd.split(':', 1) for hd in headers.splitlines()[1:]]:
+            self.headers[key] = val.strip()
             
     def parse_form(self):
         b = self.body.decode()
