@@ -153,7 +153,10 @@ class Request: # class to handle single request from client
         if b:
             resp += b
 
-        await self.loop.sock_sendall(self.client, resp)
+        try:
+            await self.loop.sock_sendall(self.client, resp)
+        except Exception:
+            pass
         
 class Router:
     def __init__(self, domain):
