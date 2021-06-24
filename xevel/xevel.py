@@ -212,6 +212,11 @@ class Xevel: # osu shall never leave my roots
         req = Request(c, self.loop) # request object kinda cooooooool i think
         await req.parse_req()
         
+        if 'Host' not in req.headers: # PIECE OF SHIT
+            c.shutdown(socket.SHUT_RDWR)
+            c.close()
+            return
+        
         await self.handle_route(req)
         
         try: # shutdown client once request is complete
