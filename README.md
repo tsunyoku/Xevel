@@ -8,7 +8,7 @@ NOTE: This will only work on UNIX-based systems.
 A basic use example of Xevel could look like this:
 
 ```python
-from xevel.xevel import *
+from xevel import *
 
 web = Xevel(('localhost', 9208)) # you can use tuples for port setups ('localhost', PORT') or unix sockets (provide file location as string)
 # ('localhost', 9208) # inet
