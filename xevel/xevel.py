@@ -101,9 +101,9 @@ class Request: # class to handle single request from client
                 args[key.strip()] = val[1:-1]
                 
             if 'filename' in args: # file was sent
-                self.files[args['filename']] = body[:-2]
+                self.files[args['filename']] = b[:-2]
             else: # regular arg
-                self.args[args['name']] = body[:-2].decode()
+                self.args[args['name']] = b[:-2].decode()
             
     async def parse_req(self):
         b = bytearray()
