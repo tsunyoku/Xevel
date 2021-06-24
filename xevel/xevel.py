@@ -256,7 +256,7 @@ class Xevel: # osu shall never leave my roots
         for ep in router.endpoints:
             if c := ep.match(path): # check matching endpoints
                 if isinstance(c, list):
-                    resp = await ep.handler(req, *check)
+                    resp = await ep.handler(req, *c)
                 else:
                     resp = await ep.handler(req)
 
