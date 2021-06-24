@@ -1,4 +1,6 @@
 from typing import Coroutine, Dict, Union, Any, List
+from urllib.parse import unquote
+
 from .codes import STATUS_CODES
 
 import socket
@@ -8,11 +10,10 @@ import select
 import asyncio
 import re
 import time
-import gzip
 
 class Endpoint:
     def __init__(self, path, method, handler):
-        self.path: Union[str, re.Pattern] = path
+        self.path: Union[str] = path
         self.methods: List[str] = method
         self.handler: Coroutine = handler
         
@@ -28,7 +29,7 @@ class Request: # class to handle single request from client
         self.path = '/'
         self.url = ''
         self.ver = 'HTTP/1.1'
-        self.body = b''
+        self.body = bytearray()
         
         self.extras = {} # ?
         
@@ -39,6 +40,8 @@ class Request: # class to handle single request from client
         self.headers: Dict[Union[str, int], Any] = {}
         self.args: Dict[Union[str, int], Any] = {}
         self.resp_headers: dict[Union[str, int], Any] = {} # easy way to add headers to response :p
+        
+        self.files: dict[str, Any] = {}
         
         self.headers_list: list = []
         
@@ -57,38 +60,71 @@ class Request: # class to handle single request from client
                 key, val = arg.split('=', 1)
                 self.args[key] = val.strip() # strip?
                 
-        for header in headers.splitlines()[1:]: # handle rest of provided headers
-            key, val = header.split(':', 1)
-            self.headers[key] = val.lstrip() # strip?
+        for key, val in [h.split(':', 1) for h in headers.splitlines()[1:]]: # handle rest of provided headers
+            self.headers[key] = val.strip() # strip?
+            
+    def parse_form(self):
+        b = self.body.decode()
+        
+        for arg in b.split('&'):
+            key, val = arg.split('=', 1)
+            self.args[unquote(key).strip()] = unquote(val).strip() # i am determined to find less ugly way of doing this
+            
+    def parse_multi(self):
+        bound = '--' + self.headers['Content-Type'].split('boundary=', 1)[1]
+        p = self.body.split(bound.encode())[1:]
+        
+        for part in p[:-1]:
+            h, b = part.split(b'\r\n\r\n', 1)
+            
+            headers = {}
+            for key, val in [hd.split(':', 1) for hd in [d for d in h.decode().split('\r\n')[1:]]]: # what the FUCK :smiley:
+                headers[key] = val.strip()
+                
+            if not (c := headers.get('Content-Disposition')): # we need main content lol
+                continue
+                
+            args = {}
+            for key, val in [a.split('=', 1) for a in c.split(';')[1:]]:
+                args[key.strip()] = val[1:-1]
+                
+            if 'filename' in args: # file was sent
+                self.files[args['filename']] = body[:-2]
+            else: # regular arg
+                self.args[args['name']] = body[:-2].decode()
             
     async def parse_req(self):
         b = bytearray()
-        while b'\r\n\r\n' not in b:
+        while o := b.find(b'\r\n\r\n') == -1: # BETTER OFFSET MANAGEMENT
             b += await self.loop.sock_recv(self.client, 1024)
         
-        spl = b.split(b'\r\n\r\n')
-        await self._handle_headers(spl[0])
+        await self._handle_headers(b[:o].decode())
         
-        self.body = b[len(spl[0]) + 4:] # I AM IN PAIN
+        self.body = b[o + 4:] # I AM IN PAIN
 
         try:
             length = int(self.headers['Content-Length'])
         except KeyError:
             return # header wasn't found, probably faulty request
         
-        if len(self.body) != length: # there's more to get
-            to_handle = length - len(self.body)
-            bb = bytearray(to_handle) # init bytearray with empty bytes remaining
-            v = memoryview(bb) # offset or something?
+        if to_handle := ((o + 4) + length) - len(b): # there's more to get
+            b += b'\x00' * to_handle # empty alloc
             
-            while to_handle: # loop til complete
+            v = memoryview(b)[-to_handle:]
+            
+            while to_handle:
                 rb = await self.loop.sock_recv_into(self.client, v)
                 v = v[rb:]
                 to_handle -= rb
-                
-            self.body += bytes(bb)
+
+            self.body += memoryview(b)[o + 4 + len(self.body):].tobytes()
             
-        # TODO: handle multipart args/request
+        if self.type == 'POST': # multipart/form handling
+            if type := self.headers.get('Content-Type'):
+                if 'form-data' in type or type.startswith('multipart/form-data'):
+                    self.parse_multi()
+                elif type in ('application/x-www-form-urlencoded', 'x-www-form'):
+                    self.parse_form()
         
     async def send(self, code, b):
         self.headers_list.insert(0, f'HTTP/1.1 {code} {STATUS_CODES.get(code)}')
@@ -217,10 +253,6 @@ class Xevel: # osu shall never leave my roots
             
         req.url = host + path
         req.code = code
-        
-        if 'Accept-Encoding' in req.headers and 'gzip' in req.headers['Accept-Encoding'] and len(resp) > 1500:
-            resp = gzip.compress(resp, 1)
-            req.headers['Content-Encoding'] = 'gzip'
             
         await req.send(code, resp) # finally send request to client xd
         
@@ -259,12 +291,16 @@ class Xevel: # osu shall never leave my roots
                 await _coro()
             
             self.socket.setblocking(False)
+            
+            if t is socket.AF_INET:
+                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            
             self.socket.bind(self.address)
             
             if t is socket.AF_UNIX:
                 os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
                 
-            self.socket.listen(5)
+            self.socket.listen()
             
             # i am trying to make this as original as possible while it also being my first attempt, bare with me!!
             r, w = os.pipe()
@@ -275,7 +311,7 @@ class Xevel: # osu shall never leave my roots
             
             while True: # loop to accept connections? i might redo this system when i learn more about the internals of what im doing here...
                 await asyncio.sleep(0.01)
-                rl, _, _ = select.select([self.socket, r], [], [], 0) # what :smiley:
+                rl, _, _ = select.select([self.socket, r], [], [], 0) # what :smiley: | ok i kinda understand this now :p
                 
                 for rd in rl:
                     if rd is self.socket: # new connection
@@ -317,4 +353,5 @@ class Xevel: # osu shall never leave my roots
         try:
             self.loop.run_forever()
         finally:
+            f.remove_done_callback(_run_cb)
             self.loop.close()
