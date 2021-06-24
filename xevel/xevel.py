@@ -98,7 +98,7 @@ class Request: # class to handle single request from client
         while o := b.find(b'\r\n\r\n') == -1: # BETTER OFFSET MANAGEMENT
             b += await self.loop.sock_recv(self.client, 1024)
         
-        await self._handle_headers(b[:o].decode())
+        await self._handle_headers(b[:o])
         
         self.body = b[o + 4:] # I AM IN PAIN
 
