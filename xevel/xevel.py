@@ -22,7 +22,7 @@ class Endpoint:
             args = self.path.match(path)
             
             if not args:
-                False
+                return False
                 
             if not (gd := args.groupdict()):
                 return True
@@ -255,7 +255,11 @@ class Xevel: # osu shall never leave my roots
         # ensure we have an endpoint in this router
         for ep in router.endpoints:
             if c := ep.match(path): # check matching endpoints
-                resp = await ep.handler(req)
+                if isinstance(c, list):
+                    resp = await ep.handler(req, *check)
+                else:
+                    resp = await ep.handler(req)
+
                 code = 200
                 
                 if req.type not in ep.methods:
