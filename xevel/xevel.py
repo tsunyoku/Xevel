@@ -207,9 +207,14 @@ class Xevel: # osu shall never leave my roots
         self.routers = set()
         self.before_serves = set()
         self.after_serves = set()
+        self.coros = set() # task coros (before being created)
+        self.tasks = set() # tasks (after being created)
 
     def add_router(self, router: Router):
         self.routers.add(router)
+        
+    def add_task(self, _coro: Coroutine):
+        self.coros.add(_coro)
 
     def before_serving(self):
         def wrapper(_coro: Coroutine):
@@ -313,6 +318,15 @@ class Xevel: # osu shall never leave my roots
                     
             for _coro in self.before_serves:
                 await _coro()
+                
+            for _coro in self.coros:
+                if isinstance(_coro, tuple):
+                    coro, args = _coro
+                    t = self.loop.create_task(coro(*args))
+                else:
+                    t = self.loop.create_task(_coro())
+                
+                self.tasks.add(t)
             
             self.socket.setblocking(False)
             
@@ -360,6 +374,23 @@ class Xevel: # osu shall never leave my roots
             
             for _coro in self.after_serves:
                 await _coro()
+                
+            if self.tasks:
+                for t in self.tasks:
+                    t.cancel()
+                    
+                await asyncio.gather(*self.tasks, return_exceptions=False)
+                
+                if running := [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]:
+                    try:
+                        await asyncio.wait(running, loop=self.loop, timeout=5.0)
+                    except asyncio.TimeoutError:
+                        ta = []
+                        for t in running:
+                            if not t.cancelled():
+                                t.cancel()
+                                ta.append(t)
+                        await asyncio.gather(*ta, return_exceptions=False)
         
         def _ignore_signal(s, fr): # when can we natively use pass without a func PLEASE
             pass
