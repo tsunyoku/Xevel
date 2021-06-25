@@ -322,7 +322,7 @@ class Xevel: # osu shall never leave my roots
             for _coro in self.coros:
                 if isinstance(_coro, tuple):
                     coro, args = _coro
-                    t = self.loop.create_task(coro(*args))
+                    t = self.loop.create_task(coro(args))
                 else:
                     t = self.loop.create_task(_coro())
                 
@@ -348,7 +348,7 @@ class Xevel: # osu shall never leave my roots
             close = False
             
             while True: # loop to accept connections? i might redo this system when i learn more about the internals of what im doing here...
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.001)
                 rl, _, _ = select.select([self.socket, r], [], [], 0) # what :smiley: | ok i kinda understand this now :p
                 
                 for rd in rl:
