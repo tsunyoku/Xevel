@@ -213,7 +213,7 @@ class Xevel: # osu shall never leave my roots
     def add_router(self, router: Router):
         self.routers.add(router)
         
-    def add_task(self, _coro: Coroutine):
+    def add_task(self, _coro):
         self.coros.add(_coro)
 
     def before_serving(self):
