@@ -5,7 +5,7 @@ with open('README.md', 'r') as rm:
 
 setuptools.setup(
     name='Xevel',
-    version='0.2.0',
+    version='0.2.1',
     author='tsunyoku',
     author_email='tsunyoku@gmail.com',
     description='Python ASGI server',

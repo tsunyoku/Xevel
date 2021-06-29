@@ -312,9 +312,10 @@ class Xevel: # osu shall never leave my roots
             else:
                 raise TypeError('Please use the correct address format!') # raising exceptions kinda cooooooool
             
-            if t is socket.AF_UNIX: # dddddddddddddd
-                if os.path.exists(self.address):
-                    os.remove(self.address)
+            if os.name != 'nt':
+                if t is socket.AF_UNIX: # dddddddddddddd
+                    if os.path.exists(self.address):
+                        os.remove(self.address)
                     
             for _coro in self.before_serves:
                 await _coro()
@@ -335,8 +336,9 @@ class Xevel: # osu shall never leave my roots
             
             self.socket.bind(self.address)
             
-            if t is socket.AF_UNIX:
-                os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
+            if os.name != 'nt':
+                if t is socket.AF_UNIX:
+                    os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
                 
             self.socket.listen()
             
