@@ -344,7 +344,8 @@ class Xevel: # osu shall never leave my roots
             
             # i am trying to make this as original as possible while it also being my first attempt, bare with me!!
             r, w = os.pipe()
-            os.set_blocking(w, False)
+            if os.name != 'nt':
+                os.set_blocking(w, False)
             signal.set_wakeup_fd(w)
             
             close = False
