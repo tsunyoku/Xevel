@@ -1,8 +1,7 @@
 from typing import Coroutine, Dict, Union, Any, List
 from urllib.parse import unquote
 
-from .codes import STATUS_CODES
-
+import http
 import socket
 import os
 import signal
@@ -10,6 +9,8 @@ import select
 import asyncio
 import re
 import time
+
+STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
 
 class Endpoint:
     def __init__(self, path, method, handler):
@@ -60,7 +61,7 @@ class Request: # class to handle single request from client
         
         self.headers_list: list = []
         
-    async def _handle_headers(self, h): # use _ for most internal functions ig xd
+    async def _handle_headers(self, h: bytes): # use _ for most internal functions ig xd
         headers = h.decode()
         
         self.type, self.path, self.ver = headers.splitlines()[0].split(' ')
@@ -138,7 +139,7 @@ class Request: # class to handle single request from client
                 elif type in ('application/x-www-form-urlencoded', 'x-www-form'):
                     self.parse_form()
         
-    async def send(self, code, b):
+    async def send(self, code: int, b: bytes):
         resp = bytearray()
         rl = [f'HTTP/1.1 {code} {STATUS_CODES.get(code)}']
         
@@ -159,7 +160,7 @@ class Request: # class to handle single request from client
             pass
         
 class Router:
-    def __init__(self, domain):
+    def __init__(self, domain: Union[str, set]):
         self.domain: Union[str, set] = domain # i may accept regex in the future
         self.endpoints = set() # endpoints current router handles (server can have multiple routers, useful for multi-file impl)
 
@@ -175,7 +176,7 @@ class Router:
         elif isinstance(self.domain, str):
             self.cond = lambda d: d == self.domain
         
-    def route(self, path, method: List[str] = ['GET']): # route decorator
+    def route(self, path: str, method: List[str] = ['GET']): # route decorator
         def wrapper(_coro: Coroutine):
             if all(c in path for c in ('<', '>')): # thank you lenforiee cus i absolutely hate regex
                 np = re.compile(rf"{path.replace('<', '(?P<').replace('>', '>.+)')}")
@@ -228,7 +229,7 @@ class Xevel: # osu shall never leave my roots
             return _coro
         return wrapper
     
-    async def handle_req(self, c):
+    async def handle_req(self, c: socket.socket):
         req = Request(c, self.loop) # request object kinda cooooooool i think
         await req.parse_req()
         
@@ -296,7 +297,7 @@ class Xevel: # osu shall never leave my roots
         for _coro in router.after_reqs:
             await _coro(req) # handle any coroutines before ending request | send request so they can take some attributes from it
             
-    def get_router(self, host):
+    def get_router(self, host: str):
         for r in self.routers:
             if r.cond(host):
                 return r
