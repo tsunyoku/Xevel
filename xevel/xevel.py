@@ -144,7 +144,7 @@ class Request: # class to handle single request from client
         rl = [f'HTTP/1.1 {code} {STATUS_CODES.get(code)}']
         
         if b:
-            rl.append(f'Content-Type: {len(b)}')
+            rl.append(f'Content-Length: {len(b)}')
             
         for key, val in self.resp_headers.items():
             rl.append(f'{key}: {val}')
