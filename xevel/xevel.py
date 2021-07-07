@@ -280,6 +280,7 @@ class Xevel: # osu shall never leave my roots
             code, resp = resp # fix response into var
             
         if isinstance(resp, dict):
+            req.resp_headers['Content-Type'] = 'application/json' # fix content type for browsers
             resp = orjson.dumps(resp) # jsonify response
             
         if isinstance(resp, str):
