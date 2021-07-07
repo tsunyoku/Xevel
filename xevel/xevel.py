@@ -9,6 +9,7 @@ import select
 import asyncio
 import re
 import time
+import orjson
 
 STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
 
@@ -277,6 +278,9 @@ class Xevel: # osu shall never leave my roots
         
         if isinstance(resp, tuple):
             code, resp = resp # fix response into var
+            
+        if isinstance(resp, dict):
+            resp = orjson.dumps(resp) # jsonify response
             
         if isinstance(resp, str):
             resp = resp.encode() # encode response into bytes for client ready xd
