@@ -279,9 +279,12 @@ class Xevel: # osu shall never leave my roots
         if isinstance(resp, tuple):
             code, resp = resp # fix response into var
             
-        if isinstance(resp, dict):
-            req.resp_headers['Content-Type'] = 'application/json' # fix content type for browsers
-            resp = orjson.dumps(resp) # jsonify response
+        if isinstance(resp, dict) or isinstance(resp, list): # list usually contains dicts
+            try:
+                req.resp_headers['Content-Type'] = 'application/json' # fix content type for browsers
+                resp = orjson.dumps(resp) # jsonify response
+            except Exception:
+                pass # probably list isnt json or smth
             
         if isinstance(resp, str):
             resp = resp.encode() # encode response into bytes for client ready xd
