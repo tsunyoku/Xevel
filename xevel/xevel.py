@@ -10,6 +10,7 @@ import asyncio
 import re
 import time
 import orjson
+import gzip
 
 STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
 
@@ -205,6 +206,8 @@ class Xevel: # osu shall never leave my roots
         self.address = address
         self.socket = None # this is bound to change i think
         self.loop = extras.get('loop', asyncio.get_event_loop()) # allow people to pass their own loop for whatever reason ig
+        
+        self.gzip = extras.get('gzip', 0)
 
         self.routers = set()
         self.before_serves = set()
@@ -291,6 +294,19 @@ class Xevel: # osu shall never leave my roots
             
         req.url = host + path
         req.code = code
+        
+        if (
+                self.gzip and 'Accept-Encoding' in req.headers and 'gzip' in req.headers['Accept-Encoding'] 
+                and len(resp) > 1500
+        ):
+            if not (
+                    'Content-Type' in req.resp_headers and 
+                    req.resp_headers['Content-Type'] in (
+                        'image/jpeg', 'image/png'
+                    )
+            ):
+                resp = gzip.compress(resp, self.gzip)
+                req.resp_headers['Content-Encoding'] = 'gzip'
             
         await req.send(code, resp) # finally send request to client xd
         
