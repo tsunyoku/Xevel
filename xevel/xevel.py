@@ -340,7 +340,7 @@ class Xevel: # osu shall never leave my roots
                 raise RuntimeError('Xevel doesn\'t support Windows!')
             
             if t is socket.AF_UNIX and os.path.exists(self.address):
-                    os.remove(self.address)
+                os.remove(self.address)
                     
             for _coro in self.before_serves:
                 await _coro()
@@ -348,11 +348,11 @@ class Xevel: # osu shall never leave my roots
             for _coro in self.coros:
                 if isinstance(_coro, tuple):
                     coro, args = _coro
-                    t = self.loop.create_task(coro(args))
+                    _t = self.loop.create_task(coro(args))
                 else:
-                    t = self.loop.create_task(_coro())
+                    _t = self.loop.create_task(_coro())
                 
-                self.tasks.add(t)
+                self.tasks.add(_t)
             
             self.socket.setblocking(False)
             
