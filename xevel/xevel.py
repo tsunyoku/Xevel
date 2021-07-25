@@ -1,4 +1,4 @@
-from typing import Coroutine, Dict, Union, Any, List
+from typing import Coroutine, Dict, Union, Any, List, Optional
 from urllib.parse import unquote
 
 import http
@@ -339,8 +339,7 @@ class Xevel: # osu shall never leave my roots
             if os.name == 'nt':
                 raise RuntimeError('Xevel doesn\'t support Windows!')
             
-            if t is socket.AF_UNIX: # dddddddddddddd
-                if os.path.exists(self.address):
+            if t is socket.AF_UNIX and os.path.exists(self.address):
                     os.remove(self.address)
                     
             for _coro in self.before_serves:
