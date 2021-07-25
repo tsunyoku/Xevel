@@ -20,7 +20,7 @@ class Endpoint:
         self.methods: List[str] = method
         self.handler: Coroutine = handler
         
-    def match(self, path): # check endpoint path with request path
+    def match(self, path) -> Union[bool, list]: # check endpoint path with request path
         if isinstance(self.path, re.Pattern):
             args = self.path.match(path)
             
@@ -40,19 +40,19 @@ class Endpoint:
 
 class Request: # class to handle single request from client
     def __init__(self, client, loop):
-        self.client = client
-        self.loop = loop
+        self.client: socket.socket = client
+        self.loop: asyncio.AbstractEventLoop = loop
         
-        self.type = 'GET'
-        self.path = '/'
-        self.url = ''
-        self.ver = 'HTTP/1.1'
-        self.body = bytearray()
+        self.type: str = 'GET'
+        self.path: str = '/'
+        self.url: str = ''
+        self.ver: str = 'HTTP/1.1'
+        self.body: bytearray = bytearray()
         
-        self.extras = {} # ?
+        self.extras: dict = {} # ?
         
-        self.elapsed = ''
-        self.code = 404
+        self.elapsed: str = ''
+        self.code: int = 404
 
         # UNION IS FUCKING HOT
         self.headers: Dict[Union[str, int], Any] = {}
@@ -63,7 +63,7 @@ class Request: # class to handle single request from client
         
         self.headers_list: list = []
         
-    async def _handle_headers(self, h: bytes): # use _ for most internal functions ig xd
+    async def _handle_headers(self, h: bytes) -> None: # use _ for most internal functions ig xd
         headers = h.decode()
         
         self.type, self.path, self.ver = headers.splitlines()[0].split(' ')
@@ -78,14 +78,14 @@ class Request: # class to handle single request from client
         for key, val in [hd.split(':', 1) for hd in headers.splitlines()[1:]]:
             self.headers[key] = val.strip()
             
-    def parse_form(self):
+    def parse_form(self) -> None:
         b = self.body.decode()
         
         for arg in b.split('&'):
             key, val = arg.split('=', 1)
             self.args[unquote(key).strip()] = unquote(val).strip() # i am determined to find less ugly way of doing this
             
-    def parse_multi(self):
+    def parse_multi(self) -> None:
         bound = '--' + self.headers['Content-Type'].split('boundary=', 1)[1]
         p = self.body.split(bound.encode())[1:]
         
@@ -108,7 +108,7 @@ class Request: # class to handle single request from client
             else: # regular arg
                 self.args[args['name']] = b[:-2].decode()
             
-    async def parse_req(self):
+    async def parse_req(self) -> None:
         b = bytearray()
         while (o := b.find(b'\r\n\r\n')) == -1: # BETTER OFFSET MANAGEMENT
             b += await self.loop.sock_recv(self.client, 1024)
@@ -134,14 +134,13 @@ class Request: # class to handle single request from client
 
             self.body += memoryview(b)[o + 4 + len(self.body):].tobytes()
             
-        if self.type == 'POST': # multipart/form handling
-            if type := self.headers.get('Content-Type'):
-                if 'form-data' in type or type.startswith('multipart/form-data'):
+        if self.type == 'POST' and (_type := self.headers.get('Content-Type')):
+                if 'form-data' in _type or _type.startswith('multipart/form-data'):
                     self.parse_multi()
-                elif type in ('application/x-www-form-urlencoded', 'x-www-form'):
+                elif _type in ('application/x-www-form-urlencoded', 'x-www-form'):
                     self.parse_form()
         
-    async def send(self, code: int, b: bytes):
+    async def send(self, code: int, b: bytes) -> None:
         resp = bytearray()
         rl = [f'HTTP/1.1 {code} {STATUS_CODES.get(code)}']
         
@@ -164,15 +163,15 @@ class Request: # class to handle single request from client
 class Router:
     def __init__(self, domain: Union[str, set]):
         self.domain: Union[str, set] = domain # i may accept regex in the future
-        self.endpoints = set() # endpoints current router handles (server can have multiple routers, useful for multi-file impl)
+        self.endpoints: set = set() # endpoints current router handles (server can have multiple routers, useful for multi-file impl)
 
-        self.before_reqs = set()
-        self.after_reqs = set()
+        self.before_reqs: set = set()
+        self.after_reqs: set = set()
         
         self.cond: eval = None
         self.validate()
         
-    def validate(self): # WHY.
+    def validate(self) -> None: # WHY.
         if isinstance(self.domain, set):
             self.cond = lambda d: d in self.domain
         elif isinstance(self.domain, str):
@@ -203,22 +202,22 @@ class Router:
         
 class Xevel: # osu shall never leave my roots
     def __init__(self, address, **extras):
-        self.address = address
-        self.socket = None # this is bound to change i think
-        self.loop = extras.get('loop', asyncio.get_event_loop()) # allow people to pass their own loop for whatever reason ig
+        self.address: Union[tuple, str] = address
+        self.socket: Optional[socket.socket] = None # this is bound to change i think
+        self.loop: asyncio.AbstractEventLoop = extras.get('loop', asyncio.get_event_loop()) # allow people to pass their own loop for whatever reason ig
         
-        self.gzip = extras.get('gzip', 0)
+        self.gzip: int = extras.get('gzip', 0)
 
-        self.routers = set()
-        self.before_serves = set()
-        self.after_serves = set()
-        self.coros = set() # task coros (before being created)
-        self.tasks = set() # tasks (after being created)
+        self.routers: set = set()
+        self.before_serves: set = set()
+        self.after_serves: set = set()
+        self.coros: set = set() # task coros (before being created)
+        self.tasks: set = set() # tasks (after being created)
 
-    def add_router(self, router: Router):
+    def add_router(self, router: Router) -> None:
         self.routers.add(router)
         
-    def add_task(self, _coro):
+    def add_task(self, _coro) -> None:
         self.coros.add(_coro)
 
     def before_serving(self):
@@ -233,7 +232,7 @@ class Xevel: # osu shall never leave my roots
             return _coro
         return wrapper
     
-    async def handle_req(self, c: socket.socket):
+    async def handle_req(self, c: socket.socket) -> None:
         req = Request(c, self.loop) # request object kinda cooooooool i think
         await req.parse_req()
         
@@ -250,7 +249,7 @@ class Xevel: # osu shall never leave my roots
         except socket.error:
             pass # dont see why socket would decide to error but alas
         
-    async def handle_route(self, req):
+    async def handle_route(self, req) -> None:
         start = time.time()
 
         host = req.headers['Host'] # find router that handles correct host
@@ -282,7 +281,7 @@ class Xevel: # osu shall never leave my roots
         if isinstance(resp, tuple):
             code, resp = resp # fix response into var
             
-        if isinstance(resp, dict) or isinstance(resp, list): # list usually contains dicts
+        if isinstance(resp, (dict, list)): # list usually contains dicts
             try:
                 req.resp_headers['Content-Type'] = 'application/json' # fix content type for browsers
                 resp = orjson.dumps(resp) # jsonify response
@@ -321,13 +320,13 @@ class Xevel: # osu shall never leave my roots
         for _coro in router.after_reqs:
             await _coro(req) # handle any coroutines before ending request | send request so they can take some attributes from it
             
-    def get_router(self, host: str):
+    def get_router(self, host: str) -> Optional[Router]:
         for r in self.routers:
             if r.cond(host):
                 return r
 
-    def start(self):
-        async def run_server():
+    def start(self) -> None:
+        async def run_server() -> None:
             if isinstance(self.address, str):
                 self.socket = socket.socket(socket.AF_UNIX)
                 t = socket.AF_UNIX
@@ -337,10 +336,12 @@ class Xevel: # osu shall never leave my roots
             else:
                 raise TypeError('Please use the correct address format!') # raising exceptions kinda cooooooool
             
-            if os.name != 'nt':
-                if t is socket.AF_UNIX: # dddddddddddddd
-                    if os.path.exists(self.address):
-                        os.remove(self.address)
+            if os.name == 'nt':
+                raise RuntimeError('Xevel doesn\'t support Windows!')
+            
+            if t is socket.AF_UNIX: # dddddddddddddd
+                if os.path.exists(self.address):
+                    os.remove(self.address)
                     
             for _coro in self.before_serves:
                 await _coro()
@@ -360,17 +361,15 @@ class Xevel: # osu shall never leave my roots
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             
             self.socket.bind(self.address)
-            
-            if os.name != 'nt':
-                if t is socket.AF_UNIX:
-                    os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
+
+            if t is socket.AF_UNIX:
+                os.chmod(self.address, 0o777) # full permissions to socket file to prevent any potential perm issues xd
                 
             self.socket.listen()
             
             # i am trying to make this as original as possible while it also being my first attempt, bare with me!!
             r, w = os.pipe()
-            if os.name != 'nt':
-                os.set_blocking(w, False)
+            os.set_blocking(w, False)
             signal.set_wakeup_fd(w)
             
             close = False
