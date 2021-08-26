@@ -94,20 +94,18 @@ class Request: # class to handle single request from client
             b = _b[:-2]
 
             for key, val in [hd.split(': ', 1) for hd in [d for d in h.decode().split('\r\n')[1:]]]: # what the FUCK :smiley:
-                if not key == 'Content-Disposition': # we need main content lol
-                    continue
+                if key == 'Content-Disposition': # we need main content lol     
+                    args = {}
+                    for key, val in [a.split('=', 1) for a in val.split('; ')[1:]]:
+                        args[key] = val[1:-1]
+                        
+                    if 'filename' in args: # file was sent
+                        self.files[args['filename']] = b
+                        break
+                    elif 'name' in args: # regular arg(?)
+                        self.args[args['name']] = b.decode()
+                        break
                     
-                args = {}
-                for key, val in [a.split('=', 1) for a in val.split('; ')[1:]]:
-                    args[key] = val[1:-1]
-                    
-                if 'filename' in args: # file was sent
-                    self.files[args['filename']] = b
-                    break
-                elif 'name' in args: # regular arg(?)
-                    self.args[args['name']] = b.decode()
-                    break
-                
                 break # maybe?
             
     async def parse_req(self) -> None:
