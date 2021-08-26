@@ -1,6 +1,6 @@
 from typing import Coroutine, Dict, Union, Any, List, Optional
 from urllib.parse import unquote
-from .headers import standard_headers
+from requests.structures import CaseInsensitiveDict
 
 import http
 import socket
@@ -14,7 +14,6 @@ import orjson
 import gzip
 
 STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
-STANDARD_HEADERS = [h.value for h in standard_headers]
 
 class Endpoint:
     def __init__(self, path, method, handler):
@@ -57,7 +56,7 @@ class Request: # class to handle single request from client
         self.code: int = 404
 
         # UNION IS FUCKING HOT
-        self.headers: Dict[Union[str, int], Any] = {}
+        self.headers: CaseInsensitiveDict[Union[str, int], Any] = CaseInsensitiveDict()
         self.args: Dict[Union[str, int], Any] = {}
         self.resp_headers: dict[Union[str, int], Any] = {} # easy way to add headers to response :p
         
