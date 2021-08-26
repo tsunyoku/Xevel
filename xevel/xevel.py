@@ -96,13 +96,13 @@ class Request: # class to handle single request from client
             for key, val in [hd.split(':', 1) for hd in [d for d in h.decode().split('\r\n')[1:]]]: # what the FUCK :smiley:
                 headers[key] = val.strip()
                 
-            if not (c := headers.get('Content-Disposition')): # we need main content lol
-                continue
-                
-            args = {}
-            for key, val in [a.split('=', 1) for a in c.split(';')[1:]]:
-                args[key.strip()] = val[1:-1]
-                
+                if not (c := headers.get('Content-Disposition')): # we need main content lol
+                    continue
+                    
+                args = {}
+                for key, val in [a.split('=', 1) for a in c.split(';')[1:]]:
+                    args[key.strip()] = val[1:-1]
+                    
                 if 'filename' in args: # file was sent
                     self.files[args['filename']] = b[:-2]
                 else: # regular arg
