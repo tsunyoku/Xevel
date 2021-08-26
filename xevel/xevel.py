@@ -76,7 +76,7 @@ class Request: # class to handle single request from client
                 self.args[key] = val.strip()
                 
         for key, val in [hd.split(':', 1) for hd in headers.splitlines()[1:]]:
-            self.headers[key] = val.strip()
+            self.headers[key.title()] = val.strip()
             
     def parse_form(self) -> None:
         b = self.body.decode()
