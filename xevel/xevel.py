@@ -90,23 +90,25 @@ class Request: # class to handle single request from client
         p = self.body.split(bound.encode())[1:]
         
         for part in p[:-1]:
-            h, b = part.split(b'\r\n\r\n', 1)
-            
-            headers = {}
-            for key, val in [hd.split(':', 1) for hd in [d for d in h.decode().split('\r\n')[1:]]]: # what the FUCK :smiley:
-                headers[key] = val.strip()
-                
-                if not (c := headers.get('Content-Disposition')): # we need main content lol
+            h, _b = part.split(b'\r\n\r\n', 1)
+            b = _b[:-2]
+
+            for key, val in [hd.split(': ', 1) for hd in [d for d in h.decode().split('\r\n')[1:]]]: # what the FUCK :smiley:
+                if not key == 'Content-Disposition': # we need main content lol
                     continue
                     
                 args = {}
-                for key, val in [a.split('=', 1) for a in c.split(';')[1:]]:
-                    args[key.strip()] = val[1:-1]
+                for key, val in [a.split('=', 1) for a in val.split('; ')[1:]]:
+                    args[key] = val[1:-1]
                     
                 if 'filename' in args: # file was sent
-                    self.files[args['filename']] = b[:-2]
-                else: # regular arg
-                    self.args[args['name']] = b[:-2].decode()
+                    self.files[args['filename']] = b
+                    break
+                elif 'name' in args: # regular arg(?)
+                    self.args[args['name']] = b.decode()
+                    break
+                
+                break # maybe?
             
     async def parse_req(self) -> None:
         b = bytearray()
