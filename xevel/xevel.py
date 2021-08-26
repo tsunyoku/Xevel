@@ -1,5 +1,6 @@
 from typing import Coroutine, Dict, Union, Any, List, Optional
 from urllib.parse import unquote
+from .headers import standard_headers
 
 import http
 import socket
@@ -13,6 +14,7 @@ import orjson
 import gzip
 
 STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
+STANDARD_HEADERS = [h.value for h in standard_headers]
 
 class Endpoint:
     def __init__(self, path, method, handler):
@@ -76,7 +78,8 @@ class Request: # class to handle single request from client
                 self.args[key] = val.strip()
                 
         for key, val in [hd.split(':', 1) for hd in headers.splitlines()[1:]]:
-            self.headers[key.title()] = val.strip()
+            if key in STANDARD_HEADERS: key = key.title()
+            self.headers[key] = val.strip()
             
     def parse_form(self) -> None:
         b = self.body.decode()
