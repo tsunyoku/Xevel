@@ -1,6 +1,12 @@
 from typing import Coroutine, Dict, Union, Any, List, Optional
 from urllib.parse import unquote
 
+try: from collections import MutableMapping
+except ImportError: from typing import MutableMapping
+    
+try: from collections import Mapping
+except ImportError: from typing import Mapping
+
 import http
 import socket
 import os
@@ -15,7 +21,7 @@ import collections
 
 STATUS_CODES = {c.value: c.phrase for c in http.HTTPStatus}
 
-class CaseInsensitiveDict(collections.MutableMapping): # taken from requests module
+class CaseInsensitiveDict(MutableMapping): # taken from requests module
     def __init__(self, data=None, **kwargs):
         self._store = dict()
         if data is None: data = {}
@@ -45,7 +51,7 @@ class CaseInsensitiveDict(collections.MutableMapping): # taken from requests mod
         )
 
     def __eq__(self, other):
-        if isinstance(other, collections.Mapping): other = CaseInsensitiveDict(other)
+        if isinstance(other, Mapping): other = CaseInsensitiveDict(other)
         else: return NotImplemented
 
         return dict(self.lower_items()) == dict(other.lower_items())
