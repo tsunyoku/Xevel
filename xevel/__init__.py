@@ -1,4 +1,4 @@
-__title__ = 'xevel'
-__author__ = 'tsunyoku'
+__title__ = "xevel"
+__author__ = "tsunyoku"
 
 from .xevel import *
